@@ -5,6 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SHoRE Fest 2026 - Technical Implementation</title>
     <style>
+        @font-face {
+        font-family: 'Gellix';
+        src: url('/fonts/Gellix-Regular.85e6a6e9.ttf') format('woff2'),
+            url('/fonts/Gellix-Regular.85e6a6e9.ttf') format('woff');
+        font-weight: normal;
+        font-style: normal;
+        }
+        @font-face {
+        font-family: 'Gellix';
+        src: url('/fonts/Gellix-SemiBold.3a5e059f.ttf') format('woff2'),
+            url('/fonts/Gellix-SemiBold.3a5e059f.ttf') format('woff');
+        font-weight: 600;
+        font-style: normal;
+        }
+        @font-face {
+        font-family: 'Gellix';
+        src: url('/fonts/Gellix-Bold.27c4d599.ttf') format('woff2'),
+            url('/fonts/Gellix-Bold.27c4d599.ttf') format('woff');
+        font-weight: bold;
+        font-style: normal;
+        }
+        @font-face {
+        font-family: 'Gellix';
+        src: url('/fonts/Gellix-Medium.bd6bc8b4.ttf') format('woff2'),
+            url('/fonts/Gellix-Medium.bd6bc8b4.ttf') format('woff');
+        font-weight: 500;
+        font-style: normal;
+        }
 
         @media print{
             * {
@@ -301,11 +329,43 @@
 
         <p><strong>The Flow:</strong></p>
         <ol>
+            <h4>The Hospitality Dashboard (Command Center)</h4>
+            <ul>
+                <li><strong>Actors:</strong> Hospitality Head/Lead.</li>
+                <li><strong>The View:</strong>
+                    <ul>
+                        <li>Head opens <strong>"Accommodation Dashboard"</strong>.</li>
+                        <li><strong>Stats Widget:</strong> Shows "Accommodation provided: 240/500", "Rooms Filled: 120/500", "Available in Block A: 45".</li>
+                        <li><strong>Grid View:</strong> Lists all registered students.</li>
+                    </ul>
+                </li>
+                <li><strong>Filtering & Sorting:</strong>
+                    <ul>
+                        <li>Filters list by: <code>Name, Phone, City, Email, Year, Male/Female, SHORE Internal-Team/Attendee</code>.</li>
+                        <li>Can also filter by inventory: <code>Floor</code>, <code>Room</code>.</li>
+                    </ul>
+                </li>
+                <li><strong>Venue Management:</strong>
+                    <ul>
+                        <li>Head/Lead views "Venue Inventory".</li>
+                        <li>Head can add new venues, update existing venues, and delete venues.</li>
+                    </ul>
+                </li>
+            </ul>
             <li><strong>Assignment:</strong>
                 <ul>
                     <li>Hospitality Head views "Paid Accommodation List" (Filter: Unassigned).</li>
-                    <li>Head selects Student &rarr; Assigns <code>Block A, Room 304</code>.</li>
+                    <li>Head selects Student &rarr; Assigns <code>Block A, Floor 2, Room 304</code>.  (Dropdown only shows available rooms)</li>
                 </ul>
+                <li><strong>The Override (VIP/Guest):</strong>
+                <ul>
+                    <li>Head selects a Guest/Speaker/Attendee/SHORE Internal-Team who has <strong>NOT</strong> paid.</li>
+                    <li>Clicks "Grant Accommodation".</li>
+                    <li><i>Consider allowing them to pay if attendee.</i></li>
+                    <li>System logs: <code>Action: Manual_Override</code>, <code>By: Hospitality_Head</code>.</li>
+                    <li>User status updates to "Eligible" without payment. Room is assigned.</li>
+                </ul>
+            </li>
             </li>
             <li><strong>User Visibility:</strong>
                 <ul>
@@ -319,6 +379,13 @@
                     <li>App shows: "Eligible for Room 304".</li>
                     <li>Volunteer hands over key &rarr; Taps "Check-In" on their app.</li>
                     <li>System updates status: <code>Occupancy: Filled</code>.</li>
+                </ul>
+            </li>
+            <li><strong>Physical Check-out:</strong>
+                <ul>
+                    <li>Student returns key. Volunteer scans QR.</li>
+                    <li>Volunteer taps <strong>"Check-Out"</strong>.</li>
+                    <li>System updates: <code>Occupancy: Vacant</code> (Room becomes available in Dropdown again).</li>
                 </ul>
             </li>
         </ol>
@@ -448,6 +515,27 @@ WHERE user_id = '123' AND item = 'Day1_Lunch' AND claimed = FALSE;
                     </li>
                 </ol>
             </li>
+        </ul>
+        <h4>The "Override" (Free Meal)</h4>
+        <ul>
+            <li><strong>Scenario:</strong> A Guest Lecturer/Sponsor/SHORE Internal team/Attendee needs lunch but has no ticket.</li>
+            <li><strong>Action:</strong> Hospitality Lead switches Scanner to <strong>"Manager Mode"</strong>.</li>
+            <li><strong>The Flow:</strong>
+                <ul>
+                    <li>Lead scans Guest QR.</li>
+                    <li>App detects "No Entitlement".</li>
+                    <li>Lead clicks <strong>"Issue Complimentary Meal"</strong>.</li>
+                    <li>System logs: <code>Meal: Issued</code>, <code>Reason: Manager_Override</code>.</li>
+                    <li>Green Screen appears.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h4>Stats & Inventory</h4>
+        <ul>
+            <li><strong>Dashboard:</strong> F&B Head views "Live Consumption Stats".</li>
+            <li><strong>Data Points:</strong> "Day 1 Lunch: 1,240 Served".</li>
+            <li><strong>Benefit:</strong> Helps kitchen team manage replenishment.</li>
         </ul>
 
         <hr class="hr-divider">
@@ -945,6 +1033,46 @@ WHERE user_id = '123' AND item = 'Day1_Lunch' AND claimed = FALSE;
         </ul>
 
         <hr class="hr-divider">
+        <h3>24. Workflow V: Partner Engagement (Sponsorship) <span class="new-feature">New</span></h3>
+        <p><em>Goal: Automate sponsor acquisition and display value metrics publicly to build trust.</em></p>
+
+        <h4>V1. The Public Partner Page (<code>/partner</code>)</h4>
+        <ul>
+            <li><strong>Actors:</strong> Potential Sponsors, Sponsorship Team.</li>
+            <li><strong>Components:</strong>
+                <ul>
+                    <li><strong>Marquee:</strong> A scrolling list of Past Sponsors (Logos fetched from DB).</li>
+                    <li><strong>Demographics Board:</strong> Data visualization showing "Last Year's Footfall", "Student Demographics", and "Social Reach" to prove value.</li>
+                    <li><strong>Deliverables:</strong> List of perks current sponsors get (Stalls, Branding, etc.).</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h4>V2. The Inquiry Loop</h4>
+        <ul>
+            <li><strong>Action:</strong> Partner clicks "Become a Sponsor".</li>
+            <li><strong>Input:</strong> Fills Contact Form (Company Name, POC, Budget, Expectations).</li>
+            <li><strong>Response:</strong>
+                <ul>
+                    <li>System saves inquiry to DB.</li>
+                    <li>System triggers <strong>Auto-Reply Email</strong>: "Thanks for reaching out! Our team will contact you shortly."</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h4>V3. Admin Management (Sponsorship Head)</h4>
+        <ul>
+            <li><strong>View Responses:</strong> Head opens Admin Panel &rarr; "Sponsorship Inquiries" to see list of interested brands.</li>
+            <li><strong>CMS Updates:</strong>
+                <ul>
+                    <li>Head can update the <strong>Demographics</strong> numbers (e.g., if footfall expectation increases).</li>
+                    <li>Head can update the <strong>Contact Form</strong> fields if requirements change.</li>
+                    <li>Head can upload new <strong>Sponsor Logos</strong> to the Marquee section.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
 
         <h2>Phase Completion</h2>
         <p>We have now mapped <strong>22 distinct workflows</strong>.</p>
@@ -965,7 +1093,7 @@ WHERE user_id = '123' AND item = 'Day1_Lunch' AND claimed = FALSE;
         <h3>Repo Structure (TurboRepo):</h3>
         <ul>
             <li><code>apps/web</code>: Next.js (Admin Dashboard + Public Website)</li>
-            <li><code>apps/api</code>: NestJS (The Unified Backend)</li>
+            <li><code>apps/api</code>: Express.Js (The Unified Backend)</li>
             <li><code>apps/scanner</code>: Flutter (Mobile App)</li>
             <li><code>packages/db</code>: Prisma Schema (Shared types)</li>
             <li><code>packages/ui</code>: Shared Design System (Tailwind components)</li>
@@ -1166,7 +1294,7 @@ WHERE user_id = '123' AND item = 'Day1_Lunch' AND claimed = FALSE;
                 <tr>
                     <td>POST</td>
                     <td>/accommodation/assign</td>
-                    <td>Assign specific Room ID to User ID.</td>
+                    <td>Assign specific Room ID to User ID. (Supports Manager Override)</td>
                     <td>Hospitality</td>
                 </tr>
                 <tr>
@@ -1181,9 +1309,65 @@ WHERE user_id = '123' AND item = 'Day1_Lunch' AND claimed = FALSE;
                     <td>"Plates served" counter (Inventory management).</td>
                     <td>F&B Head</td>
                 </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/accommodation/dashboard</td>
+                    <td><strong>New.</strong> List students with filters (City/Room/Status).</td>
+                    <td>Hospitality Head</td>
+                </tr>
+               
+                 <tr>
+                    <td>POST</td>
+                    <td>/accommodation/checkout</td>
+                    <td><strong>New.</strong> Mark room as vacant.</td>
+                    <td>Hospitality</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/fnb/issue-complimentary</td>
+                    <td><strong>New.</strong> Issue free meal (Manager Override).</td>
+                    <td>F&B Head</td>
+                </tr>
+                
             </tbody>
         </table>
-
+        <h3>Partners & Sponsorship (New)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Purpose</th>
+                    <th>Access</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>GET</td>
+                    <td>/partners/public</td>
+                    <td>Fetch Marquee logos & Demographics data.</td>
+                    <td>Public</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/partners/inquire</td>
+                    <td>Submit partnership inquiry form.</td>
+                    <td>Public</td>
+                </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/admin/partners/inquiries</td>
+                    <td>View list of form responses.</td>
+                    <td>Sponsorship Head</td>
+                </tr>
+                <tr>
+                    <td>PUT</td>
+                    <td>/admin/partners/cms</td>
+                    <td>Update Demographics/Form Config.</td>
+                    <td>Sponsorship Head</td>
+                </tr>
+            </tbody>
+        </table>
         <h3>Engagement (Social & Mystery)</h3>
         <table>
             <thead>
