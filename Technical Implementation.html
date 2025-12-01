@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHoRE Fest 2026 - Technical Implementation</title>
+    <style>
+
+        @media print{
+            * {
+                font-size: 70%;
+            }
+            hr{
+                display: none;
+            }
+            header .version-info p{
+                font-size: 14px;
+            }
+        } 
+
+        :root {
+            --primary-color: #003366;
+            --secondary-color: #00509e;
+            --accent-color: #e6f0fa;
+            --text-color: #333;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+        }
+
+        body {
+            font-family: 'Gellix';
+            line-height: 1.6;
+            color: var(--text-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #fff;
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+            margin-top: 2em;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            color: var(--secondary-color);
+        }
+
+        p {
+            margin-bottom: 1em;
+        }
+
+        ul, ol {
+            margin-bottom: 1em;
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 0.5em;
+        }
+
+        strong {
+            color: var(--primary-color);
+            text-transform: uppercase;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        code {
+            font-family: 'Google Sans Mono';
+            font-size: 0.9em;
+            color: #d63384;
+            background-color: var(--code-bg);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        pre code {
+            color: #333;
+            background-color: transparent;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95em;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            border-left: 5px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--accent-color);
+            font-style: italic;
+        }
+
+        /* Utilities */
+        .version-info {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 40px;
+        }
+
+        .hr-divider {
+            border: 0;
+            height: 1px;
+            background: #ccc;
+            margin: 40px 0;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                padding: 0;
+                color: #000;
+            }
+            h1, h2, h3 {
+                page-break-after: avoid;
+            }
+            table, pre {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SHoRE Fest 2026</h1>
+        <div class="version-info">
+            <p><strong>Version 1.0</strong><br>
+            &copy; 2025 Manas Malla. All Rights Reserved.</p>
+        </div>
+    </header>
+
+    <main>
+
+        <h2>Use cases</h2>
+
+        <h3>1. High-Level Use Case Overview</h3>
+        <p>Before the specific steps, let's visualize the actors and their boundaries.</p>
+        
+        <p><strong>Primary Actors:</strong></p>
+        <ol>
+            <li><strong>Attendee:</strong> The consumer (Student/Guest).</li>
+            <li><strong>Volunteer (Scanner):</strong> The operational edge node.</li>
+            <li><strong>Admin (Superuser):</strong> The configuration manager (IAM/Finances).</li>
+            <li><strong>Domain Head (Hospitality/Events):</strong> The operational manager.</li>
+            <li><strong>G-Events Portal:</strong> The external payment trigger.</li>
+        </ol>
+
+        <hr class="hr-divider">
+
+        <h3>2. Workflow A: The "Registration to Ticket" Journey</h3>
+        <p><em>Goal: Convert a stranger into a verified attendee with a secure, offline-capable QR code.</em></p>
+
+        <p><strong>The Flow:</strong></p>
+        <ol>
+            <li><strong>Onboarding:</strong>
+                <ul>
+                    <li>User logs in (via University Email or Guest Email).</li>
+                    <li>System creates a basic Profile (Role: <code>Attendee</code>).</li>
+                </ul>
+            </li>
+            <li><strong>Purchase (External Dependency):</strong>
+                <ul>
+                    <li>User selects "All Access Pass" or "Accommodation."</li>
+                    <li>User is redirected to <strong>G-Events Portal</strong> to pay.</li>
+                    <li><em>System State:</em> <code>Payment: Pending</code>.</li>
+                </ul>
+            </li>
+            <li><strong>The Handshake (Webhook):</strong>
+                <ul>
+                    <li>G-Events processes payment &rarr; Fires Webhook to SHoRE Backend.</li>
+                    <li>SHoRE Backend validates payload &rarr; Updates DB to <code>Payment: Paid</code>.</li>
+                    <li><strong>Crucial Step:</strong> Backend generates the "Seed Key" for the user's cryptographic QR and sends it to the User App.</li>
+                </ul>
+            </li>
+            <li><strong>Ticket Generation:</strong>
+                <ul>
+                    <li>User opens SHoRE App.</li>
+                    <li>App detects "Paid" status + "Seed Key."</li>
+                    <li>App starts generating <strong>Dynamic QRs</strong> (changing every 30s) locally.</li>
+                </ul>
+            </li>
+        </ol>
+
+        <p><strong>Validation Question:</strong> Does the G-Events portal support sending us a unique transaction ID that we can link back to the specific student ID? (We need a common key to link the webhook).</p>
+
+        <hr class="hr-divider">
+
+        <h3>3. Workflow B: The "Gate Access" Loop (Online Scanner, Offline User)</h3>
+        <p><em>Goal: Process 3,000 students quickly without internet on user phones, preventing fraud.</em></p>
+        
+        <p><strong>The Flow:</strong></p>
+        <ol>
+            <li><strong>The Approach:</strong> Attendee walks to the gate. Opens app. No Internet? No problem. App generates QR: <code>[UserID + Timestamp + Signature]</code>.</li>
+            <li><strong>The Scan:</strong> Volunteer scans QR with the Scanner App.</li>
+            <li><strong>Device Validation (The "Bouncer"):</strong>
+                <ul>
+                    <li>Scanner checks Signature (Integrity).</li>
+                    <li>Scanner checks Timestamp (Freshness).</li>
+                    <li><em>Result:</em> If Invalid &rarr; Red Screen immediately.</li>
+                </ul>
+            </li>
+            <li><strong>Server Validation (The "Manager"):</strong>
+                <ul>
+                    <li><em>If Valid:</em> Scanner sends <code>UserID</code> to Backend via CATS Network.</li>
+                    <li>Backend runs <strong>Atomic SQL</strong>: <code>UPDATE checks SET in=TRUE WHERE in=FALSE</code>.</li>
+                </ul>
+            </li>
+            <li><strong>The Decision:</strong>
+                <ul>
+                    <li>Backend returns <code>Success</code> &rarr; Scanner flashes <strong>GREEN</strong> + Photo of Student.</li>
+                    <li>Backend returns <code>Fail</code> (Already Entered) &rarr; Scanner flashes <strong>RED</strong> + "DUPLICATE ENTRY".</li>
+                </ul>
+            </li>
+        </ol>
+
+        <hr class="hr-divider">
+
+        <h3>4. Workflow C: The "Crisis Management" Journey (IAM/RBAC)</h3>
+        <p><em>Goal: Handling last-minute permission changes without code deployment.</em></p>
+
+        <p><strong>The Flow:</strong></p>
+        <ol>
+            <li><strong>The Trigger:</strong> A "Pro-Show" volunteer falls sick. A "Hospitality" volunteer needs to take their place at the entrance immediately.</li>
+            <li><strong>The Intervention:</strong>
+                <ul>
+                    <li>Admin opens <strong>SHoRE Admin Panel</strong>.</li>
+                    <li>Finds User: "Volunteer A".</li>
+                    <li>Current Role: <code>Hospitality Volunteer</code>.</li>
+                </ul>
+            </li>
+            <li><strong>The Adjustment (Option A - Quick Fix):</strong>
+                <ul>
+                    <li>Admin adds a direct permission: <code>events.proshow.scan</code>.</li>
+                    <li><em>System Action:</em> Updates User Permissions in DB &rarr; Invalidates User Cache.</li>
+                </ul>
+            </li>
+            <li><strong>The Adjustment (Option B - Role Change):</strong>
+                <ul>
+                    <li>Admin changes Role to <code>Event Volunteer</code>.</li>
+                </ul>
+            </li>
+            <li><strong>The Result:</strong>
+                <ul>
+                    <li>"Volunteer A" refreshes their app.</li>
+                    <li>The "Scan Ticket" button appears on their dashboard.</li>
+                    <li>They start scanning. <strong>Time elapsed: 30 seconds.</strong></li>
+                </ul>
+            </li>
+        </ol>
+
+        <hr class="hr-divider">
+
+        <h3>5. Workflow D: The "Accommodation" Cycle</h3>
+        <p><em>Goal: Managing physical check-ins for rooms.</em></p>
+
+        <p><strong>The Flow:</strong></p>
+        <ol>
+            <li><strong>Assignment:</strong>
+                <ul>
+                    <li>Hospitality Head views "Paid Accommodation List" (Filter: Unassigned).</li>
+                    <li>Head selects Student &rarr; Assigns <code>Block A, Room 304</code>.</li>
+                </ul>
+            </li>
+            <li><strong>User Visibility:</strong>
+                <ul>
+                    <li>Student opens app &rarr; "My Stay" section shows "Room 304".</li>
+                </ul>
+            </li>
+            <li><strong>Physical Check-in:</strong>
+                <ul>
+                    <li>Student arrives at Hostel.</li>
+                    <li>Hospitality Volunteer scans Student QR.</li>
+                    <li>App shows: "Eligible for Room 304".</li>
+                    <li>Volunteer hands over key &rarr; Taps "Check-In" on their app.</li>
+                    <li>System updates status: <code>Occupancy: Filled</code>.</li>
+                </ul>
+            </li>
+        </ol>
+
+        <hr class="hr-divider">
+
+        <h3>6. Edge Case Validation (The "What Ifs")</h3>
+        <p>Let's test these workflows against reality.</p>
+        <ul>
+            <li><strong>Scenario 1:</strong> The G-Events Webhook fails (server busy).
+                <ul>
+                    <li><em>Fix:</em> We need a "Reconcile" button in the Admin Panel that allows us to upload a CSV from G-Events and manually mark users as "Paid."</li>
+                </ul>
+            </li>
+            <li><strong>Scenario 2:</strong> Scanner loses CATS Network connectivity.
+                <ul>
+                    <li><em>Fix:</em> Scanner switches to "Offline Mode." Validates Crypto Signature only. Queues the "Check-in" data. Syncs when network returns. (Risk: Replay attack possible, but low probability in short window).</li>
+                </ul>
+            </li>
+            <li><strong>Scenario 3:</strong> User phone battery dies.
+                <ul>
+                    <li><em>Fix:</em> "Manual Entry" mode. Volunteer types Student ID/Email. System pulls up Photo. Volunteer verifies face &rarr; Checks in manually.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>6. Workflow E: Event Creation (The "Draft" Lifecycle)</h3>
+        <p><em>Goal: Allow Admins to set up events without exposing them to the public immediately.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Admin / Event Head.</li>
+            <li><strong>IAM Permission:</strong> <code>event.create</code>.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Drafting:</strong>
+                        <ul>
+                            <li>Admin enters details: Title, Description, Venue, Capacity, Time.</li>
+                            <li><strong>Crucial Step:</strong> Admin selects "Access Rule" (e.g., "Open to All" vs. "Pro-Pass Only").</li>
+                            <li>System saves as <code>Status: Draft</code>. (Not visible in the App).</li>
+                        </ul>
+                    </li>
+                    <li><strong>Review (Optional):</strong>
+                        <ul>
+                            <li>Admin reviews the draft.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Publishing:</strong>
+                        <ul>
+                            <li>Admin clicks "Publish."</li>
+                            <li>System updates status to <code>Status: Live</code>.</li>
+                            <li>Event becomes visible on the Website/App API.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>7. Workflow F: Event Updation & Notification</h3>
+        <p><em>Goal: Handle changes (Venue/Time) and ensure attendees are informed.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Admin / Event Head.</li>
+            <li><strong>IAM Permission:</strong> <code>event.update</code>.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>The Change:</strong>
+                        <ul>
+                            <li>Head changes Venue from "Auditorium" to "Open Air Theater."</li>
+                        </ul>
+                    </li>
+                    <li><strong>The Audit:</strong>
+                        <ul>
+                            <li>System logs: <code>User: Event_Head changed Venue ID 101</code>.</li>
+                        </ul>
+                    </li>
+                    <li><strong>The Trigger:</strong>
+                        <ul>
+                            <li>Admin checks a box: "Notify Registered Attendees?"</li>
+                        </ul>
+                    </li>
+                    <li><strong>The Broadcast:</strong>
+                        <ul>
+                            <li>If checked, System triggers a <strong>Push Notification/Email</strong> job via a background worker (Queue) to all users registered for that specific event.</li>
+                            <li>"Alert: Venue for 'Battle of Bands' changed to OAT."</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>8. Workflow G: Food & Beverage (The "Digital Coupon" Model)</h3>
+        <p><em>Goal: Manage meal distribution efficiently and prevent double-claiming.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Attendee, F&B Volunteer.</li>
+            <li><strong>Prerequisite:</strong> User purchased "Hospitality Pack" (via G-Events).</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Entitlement:</strong>
+                        <ul>
+                            <li>User profile has a ledger: <code>{ "Day1_Lunch": 1, "Day1_Dinner": 1 }</code>.</li>
+                        </ul>
+                    </li>
+                    <li><strong>The Exchange:</strong>
+                        <ul>
+                            <li>User arrives at the Food Counter.</li>
+                            <li>Volunteer selects "Day 1 Lunch" mode on Scanner.</li>
+                        </ul>
+                    </li>
+                    <li><strong>The Validation (Strictly Online/CATS Network):</strong>
+                        <ul>
+                            <li>Volunteer scans User QR.</li>
+                            <li><strong>Atomic SQL Check:</strong>
+<pre><code>UPDATE user_entitlements
+SET claimed = TRUE, claimed_at = NOW()
+WHERE user_id = '123' AND item = 'Day1_Lunch' AND claimed = FALSE;
+</code></pre>
+                            </li>
+                        </ul>
+                    </li>
+                    <li><strong>The Feedback:</strong>
+                        <ul>
+                            <li><strong>Success (Rows=1):</strong> Green Screen. Volunteer hands over the plate.</li>
+                            <li><strong>Fail (Rows=0):</strong> Red Screen ("Already Ate").</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>9. Workflow H: Competition Participation</h3>
+        <p><em>Goal: Handling individual and team registrations.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Attendee.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Discovery:</strong> User views "Hackathon" event page.</li>
+                    <li><strong>Eligibility Check:</strong>
+                        <ul>
+                            <li>User clicks "Register."</li>
+                            <li>System checks: Does User have the required Pass (e.g., Pro Pass)?</li>
+                        </ul>
+                    </li>
+                    <li><strong>Team Logic (If applicable):</strong>
+                        <ul>
+                            <li><em>Scenario A (Individual):</em> System adds user to <code>event_participants</code> table.</li>
+                            <li><em>Scenario B (Team Leader):</em> User creates a Team Name &rarr; Generates a "Team Code."</li>
+                            <li><em>Scenario C (Team Member):</em> User enters "Team Code" to join.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Confirmation:</strong>
+                        <ul>
+                            <li>User receives a "Registered" badge on the event card.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>10. Workflow I: View Check-ins (The "Command Center")</h3>
+        <p><em>Goal: Real-time situational awareness for crowd control.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Admin, Security Head.</li>
+            <li><strong>IAM Permission:</strong> <code>analytics.view</code>.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Dashboard Load:</strong>
+                        <ul>
+                            <li>Admin opens "Live Stats."</li>
+                        </ul>
+                    </li>
+                    <li><strong>Data Aggregation (Cached):</strong>
+                        <ul>
+                            <li>Backend queries the <code>registrations</code> and <code>event_logs</code> tables.</li>
+                            <li><em>Optimization:</em> Use a Redis counter that increments on every scan to avoid heavy SQL <code>COUNT(*)</code> queries every second.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Visualization:</strong>
+                        <ul>
+                            <li><strong>Heatmap:</strong> Shows which Gate/Venue has high traffic.</li>
+                            <li><strong>Demographics:</strong> "1,200 GITAM Students" vs "300 Non-GITAM."</li>
+                            <li><strong>Time Series:</strong> "Entries per minute" (Detects rush hours).</li>
+                        </ul>
+                    </li>
+                    <li><strong>Drill Down:</strong>
+                        <ul>
+                            <li>Click on "Pro-Show" &rarr; See list of currently checked-in users.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>11. Workflow J: Marketing Campaigns (Dynamic Content)</h3>
+        <p><em>Goal: Creating hype without code deployments (using the Feature Flag system).</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Marketing Head, Admin.</li>
+            <li><strong>IAM Permission:</strong> <code>marketing.config</code>.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Configuration:</strong>
+                        <ul>
+                            <li>Marketing team designs a "Flash Sale Banner."</li>
+                            <li>Admin uploads image to storage.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Activation:</strong>
+                        <ul>
+                            <li>Admin goes to <strong>System Config</strong> in Admin Panel.</li>
+                            <li>Sets <code>promo_banner_active</code> = <code>TRUE</code>.</li>
+                            <li>Sets <code>promo_image_url</code> = <code>.../banner.jpg</code>.</li>
+                            <li>Sets <code>promo_link</code> = <code>.../register</code>.</li>
+                        </ul>
+                    </li>
+                    <li><strong>User Experience:</strong>
+                        <ul>
+                            <li>User refreshes the App/Website.</li>
+                            <li>The App checks the config API.</li>
+                            <li>The Banner appears dynamically on the Home Screen.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>12. Workflow K: Competition Lifecycle & Judging (Granular)</h3>
+        <p><em>Goal: Manage the flow of participants through rounds and track real-time occupancy of the venue.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Event Volunteer, Judge, Participant.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Venue Entry (Check-In):</strong>
+                        <ul>
+                            <li>Volunteer scans Participant QR.</li>
+                            <li>System updates: <code>status: checked_in</code>, <code>location: room_101</code>.</li>
+                            <li><strong>Dashboard Update:</strong> Event Head sees "50/60 Participants present."</li>
+                        </ul>
+                    </li>
+                    <li><strong>The Judging Round:</strong>
+                        <ul>
+                            <li>Judge logs in (Role: <code>Judge</code>).</li>
+                            <li>Selects "Round 1".</li>
+                            <li>Participants are listed (filtered by <code>checked_in</code>).</li>
+                            <li>Judge enters score/notes &rarr; Submit.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Result Notification:</strong>
+                        <ul>
+                            <li>Event Head clicks "Publish Results."</li>
+                            <li>System calculates top scorers.</li>
+                            <li><strong>Notification:</strong> Push notification sent to Winners: "You qualified for Round 2!"</li>
+                            <li><strong>Status Update:</strong> Losers marked <code>status: eliminated</code>.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Venue Exit (Check-Out):</strong>
+                        <ul>
+                            <li>Volunteer scans QR on exit.</li>
+                            <li>System updates: <code>location: null</code>. (Crucial for knowing if a team is missing before their turn).</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>13. Workflow L: Profile Management</h3>
+        <p><em>Goal: Self-service data management.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> User.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>View:</strong> User sees "My Profile" (Name, ID, Photo).</li>
+                    <li><strong>Update:</strong>
+                        <ul>
+                            <li>User edits phone number or Instagram handle.</li>
+                            <li><strong>Constraint:</strong> Critical fields (Name, University ID, Email) are <strong>Locked</strong> after initial verification to prevent identity swapping.</li>
+                            <li><em>To change locked fields, they must raise a Ticket (Workflow M).</em></li>
+                        </ul>
+                    </li>
+                    <li><strong>History:</strong> User views "My Registrations" (List of Paid Events).</li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>14. Workflow M: Support System (Ticketing)</h3>
+        <p><em>Goal: Centralized communication for issues.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> User, Admin.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Creation:</strong>
+                        <ul>
+                            <li>User clicks "Help" &rarr; "Raise Issue."</li>
+                            <li>Selects Category: (Payment, Accommodation, App Bug).</li>
+                            <li>Writes description &rarr; Submit.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Triage:</strong>
+                        <ul>
+                            <li>Admin views "Open Tickets."</li>
+                            <li>Assigns to specific Lead (e.g., Finance Lead for payments).</li>
+                        </ul>
+                    </li>
+                    <li><strong>Resolution:</strong>
+                        <ul>
+                            <li>Lead replies: "Fixed, please retry."</li>
+                            <li>Lead changes status: <code>Resolved</code>.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Feedback:</strong> User gets notified and can reopen if not satisfied.</li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>15. Workflow N: Non-GITAM Verification (The "Gatekeeper")</h3>
+        <p><em>Goal: Security vetting for outsiders.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Non-GITAM User, Admin (Security Team).</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Upload:</strong> User registers &rarr; Uploads Gov ID / College ID photo.</li>
+                    <li><strong>Pending State:</strong> System locks QR generation. Status: <code>Verification Pending</code>.</li>
+                    <li><strong>The Review:</strong>
+                        <ul>
+                            <li>Admin views "Pending Queue."</li>
+                            <li>Admin compares Name on form vs. Name on ID Card.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Action:</strong>
+                        <ul>
+                            <li><strong>Approve:</strong> Unlocks Payment/QR. Sends "Welcome" email.</li>
+                            <li><strong>Reject:</strong> Sends email "ID unclear, please re-upload."</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+        <p><em></em></p>
+
+        <hr class="hr-divider">
+
+        <h3>16. Workflow O: IAM & Team Management</h3>
+        <p><em>Goal: Onboarding the team.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Super Admin.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Invite:</strong> Admin enters email <code>new_lead@shore.in</code>. Selects Role: <code>Events Lead</code>.</li>
+                    <li><strong>Onboarding:</strong>
+                        <ul>
+                            <li>System sends Email Invite.</li>
+                            <li>User clicks link &rarr; Sets Password.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Access:</strong> User logs in. The <code>permissions</code> table automatically loads the "Events Lead" capabilities.</li>
+                    <li><strong>Offboarding:</strong> Admin clicks "Deactivate." User session is killed immediately.</li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>17. Workflow P: Mystery QR (Gamification)</h3>
+        <p><em>Goal: A digital scavenger hunt to drive engagement.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Attendee.</li>
+            <li><strong>The Setup:</strong>
+                <ul>
+                    <li>Marketing team prints 10 unique static QRs and hides them around campus.</li>
+                    <li>Database table <code>mystery_qrs</code> contains the hashes of these codes.</li>
+                </ul>
+            </li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Scan:</strong> User finds a hidden QR &rarr; Scans with SHoRE App.</li>
+                    <li><strong>Validation:</strong>
+                        <ul>
+                            <li>App sends Hash to Server.</li>
+                            <li>Server checks: "Has this user scanned this specific QR before?"</li>
+                        </ul>
+                    </li>
+                    <li><strong>Reward:</strong>
+                        <ul>
+                            <li>If No: <code>User_Points += 50</code>. Show "You found Clue #1!"</li>
+                            <li>If Yes: Show "Already Collected."</li>
+                        </ul>
+                    </li>
+                    <li><strong>Leaderboard:</strong> App displays "Top Hunters."</li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>18. Workflow Q: Instagram Integration</h3>
+        <p><em>Goal: Social proof on the dashboard.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> System (Cron Job), Marketing Head.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Connection:</strong> Admin authenticates with "Instagram Graph API."</li>
+                    <li><strong>Sync (Background Job):</strong>
+                        <ul>
+                            <li>Every 1 hour, server fetches: <code>Follower Count</code>, <code>Latest Post Likes</code>, <code>Hashtag Mentions</code>.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Display:</strong>
+                        <ul>
+                            <li>Admin Dashboard shows a "Social Reach" graph.</li>
+                            <li>Public Website shows: "Join our 10K+ Community!"</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>19. Workflow R: Artist Lineup Management</h3>
+        <p><em>Goal: CMS for the website.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Event Head.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Edit:</strong> Head opens "Artist Manager."</li>
+                    <li><strong>Update:</strong>
+                        <ul>
+                            <li>Uploads Photo of "Band X".</li>
+                            <li>Adds Bio, Instagram Link, Spotify Link.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Publish:</strong>
+                        <ul>
+                            <li>API endpoint <code>/api/artists</code> updates.</li>
+                            <li>Website/App reflects the new lineup immediately.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>20. Workflow S: FAQ Management</h3>
+        <p><em>Goal: Reducing support tickets.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Content Team.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Draft:</strong> Admin adds Question & Answer. Category: "Transport."</li>
+                    <li><strong>Publish:</strong> Instant update to the <code>/api/faq</code> endpoint.</li>
+                    <li><strong>View:</strong> Users search FAQs in the app.</li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>21. Workflow T: Countdown Timer</h3>
+        <p><em>Goal: Hype generation.</em></p>
+        <ul>
+            <li><strong>Actors:</strong> Admin.</li>
+            <li><strong>The Flow:</strong>
+                <ol>
+                    <li><strong>Config:</strong> Admin sets <code>event_start_timestamp</code> in System Config.</li>
+                    <li><strong>Sync:</strong> App fetches this timestamp on launch.</li>
+                    <li><strong>Display:</strong> App calculates <code>Time Now - Start Time</code> locally and updates the ticker every second.</li>
+                </ol>
+            </li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h3>22. Workflow U: AI-Automated Social Wall</h3>
+        <p>This is a fantastic idea. You are essentially proposing an <strong>"AI-First Content Moderation Pipeline."</strong></p>
+        <p>Instead of a human manually reviewing 500 photos a day, you delegate that authority to the Gemini API (specifically <strong>Gemini 1.5 Flash</strong>, which is multimodal, incredibly fast, and cost-effective for high-volume tasks). This changes the Social Wall from a "Manually Curated" feature to a <strong>"Self-Driving"</strong> feature.</p>
+        
+        
+        <p>Here is how we architect <strong>"Gemini as the Social Manager"</strong> for SHoRE Fest.</p>
+
+        <h4>1. The Trigger (Ingestion)</h4>
+        <ul>
+            <li>The backend fetches the latest 20 posts tagged <code>#shoremachao</code> from Instagram.</li>
+        </ul>
+
+        <h4>2. The "Consultation" (Gemini API Call)</h4>
+        <ul>
+            <li>Instead of saving these immediately to the DB, your server sends the <strong>Image</strong> and the <strong>Caption</strong> to Gemini.</li>
+            <li><strong>The Persona:</strong> We tell Gemini it is the "Chief Brand Safety Officer" for a University Festival.</li>
+        </ul>
+
+        <h4>3. The Analysis (The Logic)</h4>
+        <ul>
+            <li>Gemini evaluates the post against strict "College Fest Guidelines":
+                <ul>
+                    <li><strong>NSFW/Violence:</strong> (Built-in Safety Filters).</li>
+                    <li><strong>Substance Abuse:</strong> (Alcohol, smoking, drugs - usually strict for colleges).</li>
+                    <li><strong>Sentiment:</strong> Is this hate speech, sarcasm, or a complaint?</li>
+                    <li><strong>Relevance:</strong> Is it actually about the fest, or just spam using the hashtag?</li>
+                    <li><strong>Quality:</strong> Is the image too dark/blurry to look good on the homepage?</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h4>4. The Verdict (JSON Output)</h4>
+        <p>Gemini returns a structured decision:</p>
+<pre><code>{
+  "decision": "APPROVED",
+  "confidence_score": 0.98,
+  "reason": "Clear image of students dancing, positive caption, no brand risks."
+}
+</code></pre>
+        <p><em>OR</em></p>
+<pre><code>{
+  "decision": "REJECTED",
+  "reason": "Contains alcohol bottles in background."
+}
+</code></pre>
+
+        <h4>5. The Action</h4>
+        <ul>
+            <li><strong>High Confidence Approval (>0.9):</strong> Auto-publish (Status: <code>Live</code>).</li>
+            <li><strong>Rejection:</strong> Auto-delete.</li>
+            <li><strong>Unsure (0.5 - 0.9):</strong> Send to "Manual Review" queue for a human to check (Status: <code>Pending</code>).</li>
+        </ul>
+
+        <h4>The "Prompt" Engineering</h4>
+        <p>To make this work, we don't just ask "Is this bad?" We give Gemini a rubric. Here is the system instruction you will use in your code:</p>
+
+        <blockquote>
+            <p><strong>System Prompt for the API:</strong></p>
+            <p>"You are the AI Content Moderator for SHoRE Fest 2026, a university festival. Your job is to filter user-generated Instagram content for the public website.</p>
+            <p><strong>Analyze the provided Image and Caption.</strong></p>
+            <p><strong>Rejection Criteria (Immediate Fail):</strong><br>
+            1. Nudity, violence, or sexual content.<br>
+            2. Alcohol, drugs, or smoking paraphernalia.<br>
+            3. Hate speech, bullying, or profanity in the caption.<br>
+            4. Competitor university logos prominent in the frame.<br>
+            5. Spam (crypto ads, unrelated content).</p>
+            <p><strong>Quality Criteria (Soft Fail):</strong><br>
+            1. Image is extremely blurry or dark.<br>
+            2. Caption contains negative sentiment about the university.</p>
+            <p><strong>Output Format (JSON Only):</strong><br>
+            {<br>
+            'status': 'APPROVED' | 'REJECTED' | 'FLAGGED',<br>
+            'reason': 'Short explanation',<br>
+            'tags': ['happy', 'concert', 'food']<br>
+            }"</p>
+        </blockquote>
+
+        <h4>Why this is better (and safer)</h4>
+        <ol>
+            <li><strong>Speed:</strong> Humans sleep; Gemini doesn't. A post tagged at 2 AM gets approved at 2:00:05 AM.</li>
+            <li><strong>Scale:</strong> If you suddenly get 5,000 posts during the "Pro-Show," a human moderator would drown. Gemini scales infinitely.</li>
+            <li><strong>Cost:</strong> Gemini 1.5 Flash is extremely cheap. Analyzing 1,000 images would cost pennies.</li>
+        </ol>
+
+        <h4>Updated Database Schema for AI Moderation</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Type</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>id</code></td>
+                    <td>UUID</td>
+                    <td>PK</td>
+                </tr>
+                <tr>
+                    <td><code>ig_post_id</code></td>
+                    <td>VARCHAR</td>
+                    <td>From Instagram</td>
+                </tr>
+                <tr>
+                    <td><code>media_url</code></td>
+                    <td>TEXT</td>
+                    <td>Image/Video link</td>
+                </tr>
+                <tr>
+                    <td><code>ai_verdict</code></td>
+                    <td>ENUM</td>
+                    <td>'APPROVED', 'REJECTED', 'FLAGGED'</td>
+                </tr>
+                <tr>
+                    <td><code>ai_confidence</code></td>
+                    <td>FLOAT</td>
+                    <td>0.0 to 1.0</td>
+                </tr>
+                <tr>
+                    <td><code>ai_reason</code></td>
+                    <td>TEXT</td>
+                    <td>Why did Gemini reject it?</td>
+                </tr>
+                <tr>
+                    <td><code>status</code></td>
+                    <td>ENUM</td>
+                    <td>'LIVE', 'PENDING', 'DELETED'</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>The "Fail-Safe"</h4>
+        <p>We must assume AI isn't perfect.</p>
+        <ul>
+            <li><strong>The "Kill Switch":</strong> If a bad post <em>does</em> get through (AI hallucination), the Admin Panel must have a "Panic Delete" button that removes it instantly and bans that Instagram user handle from future auto-approvals.</li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h2>Phase Completion</h2>
+        <p>We have now mapped <strong>22 distinct workflows</strong>.</p>
+        <ol>
+            <li><strong>Core:</strong> Registration, Payment, Ticket Generation (Crypto), Access Control (Atomic).</li>
+            <li><strong>Ops:</strong> Accommodation, F&B, Events, Competitions (Check-in/Result).</li>
+            <li><strong>Admin:</strong> IAM, Analytics, Non-GITAM Verification, Support.</li>
+            <li><strong>Marketing:</strong> Mystery QR, Instagram, Artists, Countdown, FAQs.</li>
+        </ol>
+        <p>This is a <strong>complete functional specification</strong>.</p>
+
+        <hr class="hr-divider">
+
+        <h2>Architectural Style: Modular Monolith</h2>
+        <p>We will avoid the complexity of Microservices in favor of a <strong>Modular Monolith</strong> hosted in a <strong>Monorepo</strong>.</p>
+        
+        
+        <h3>Repo Structure (TurboRepo):</h3>
+        <ul>
+            <li><code>apps/web</code>: Next.js (Admin Dashboard + Public Website)</li>
+            <li><code>apps/api</code>: NestJS (The Unified Backend)</li>
+            <li><code>apps/scanner</code>: Flutter (Mobile App)</li>
+            <li><code>packages/db</code>: Prisma Schema (Shared types)</li>
+            <li><code>packages/ui</code>: Shared Design System (Tailwind components)</li>
+        </ul>
+
+        <h3>Why this wins:</h3>
+        <ul>
+            <li><strong>Type Safety:</strong> We can share TypeScript interfaces between Backend and Frontend instantly.</li>
+            <li><strong>Scaling:</strong> We handle 15k users by adding more instances of apps/api behind a Load Balancer, not by splitting the code.</li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h2>Technology Stack Selection</h2>
+        <p><strong>Philosophy:</strong> Reliability > Innovation. We are building for <strong>15,000</strong> users, not a hackathon prototype. The stack prioritizes <strong>Offline-First capabilities</strong> and <strong>High Concurrency</strong>.</p>
+
+        <h3>Core Infrastructure</h3>
+        <ul>
+            <li><strong>Cloud Provider:</strong> Google Cloud Platform (GCP) (Leveraging existing familiarity).</li>
+            <li><strong>Database:</strong> PostgreSQL 16+ (Hosted on Cloud SQL).
+                <br><em>Why:</em> Relational integrity is non-negotiable for payments and room allocation.
+            </li>
+            <li><strong>Caching & Queues:</strong> Redis & BullMQ.
+                <br><em>Usage:</em>
+                <ul>
+                    <li>Caching IAM permissions, counting live check-ins, holding webhook bursts.</li>
+                    <li>Handles payment bursts. Backed by Redis. Native to Node.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>Backend (The "Brain")</h3>
+        <ul>
+            <li><strong>Runtime:</strong> Node.js (v20 LTS) with TypeScript.</li>
+            <li><strong>Framework:</strong> Express.js or NestJS (NestJS recommended for structured, enterprise-grade architecture).</li>
+            <li><strong>ORM:</strong> Prisma or Drizzle. (Prisma is safer for atomic transactions).</li>
+            <li><strong>AI Integration:</strong> Google GenAI SDK (Gemini 1.5 Flash).</li>
+        </ul>
+
+        <h3>Frontend (The "Face")</h3>
+        <ul>
+            <li><strong>Web Portal (Admin/User Dashboard):</strong> Next.js 14 (App Router).
+                <br><em>Why:</em> SEO for the public site, Server Components for the Admin dashboard performance.
+            </li>
+            <li><strong>Mobile Apps (Scanner & Attendee):</strong> Flutter.
+                <br><em>Why:</em> Superior access to native hardware (Camera/NFC) and better performance for the "Offline Crypto Engine" compared to React Native.
+            </li>
+        </ul>
+
+        <h3>Critical Libraries</h3>
+        <ul>
+            <li><strong>Cryptography:</strong> libsodium or tweetnacl (for Ed25519 signing/verification).</li>
+            <li><strong>Queues:</strong> BullMQ (Redis-based job queue for handling payment webhooks).</li>
+            <li><strong>Validation:</strong> Zod (Runtime schema validation).</li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h2>API Endpoints Specification</h2>
+
+        <h3>Authentication & IAM</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Purpose</th>
+                    <th>Access</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>POST</td>
+                    <td>/auth/login</td>
+                    <td>Email/Password or Google OAuth exchange.</td>
+                    <td>Public</td>
+                </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/auth/me</td>
+                    <td>Get current user profile + Permissions List.</td>
+                    <td>Auth</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/auth/verify-student</td>
+                    <td>Submit ID card for Non-GITAM verification.</td>
+                    <td>Auth</td>
+                </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/admin/roles</td>
+                    <td>List all roles and associated permissions.</td>
+                    <td>Admin</td>
+                </tr>
+                <tr>
+                    <td>PUT</td>
+                    <td>/admin/roles/:id/permissions</td>
+                    <td>Update permissions (IAM Dynamic Config).</td>
+                    <td>SuperAdmin</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Core Events & Registration</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Purpose</th>
+                    <th>Access</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>GET</td>
+                    <td>/events</td>
+                    <td>List visible events (filter by day/category).</td>
+                    <td>Public</td>
+                </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/events/:id</td>
+                    <td>Get details (Venue, Description, Rules).</td>
+                    <td>Public</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/registrations/webhook</td>
+                    <td>Critical. Receiver for G-Events payment trigger. Pushes to Redis Queue.</td>
+                    <td>Public (Signed)</td>
+                </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/registrations/my-ticket</td>
+                    <td>Get qr_seed and ticket details.</td>
+                    <td>Auth</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/events/:id/participate</td>
+                    <td>Register for free events/competitions.</td>
+                    <td>Auth (Pass Check)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Access Control (The "Gatekeeper")</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Purpose</th>
+                    <th>Access</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>POST</td>
+                    <td>/gate/sync-checkin</td>
+                    <td>Offline Sync. Bulk upload of offline scan logs.</td>
+                    <td>Scanner Role</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/gate/verify-atomic</td>
+                    <td>Online Scan. Validates Sig + Timestamp + Atomic SQL Update.</td>
+                    <td>Scanner Role</td>
+                </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/gate/stats</td>
+                    <td>Real-time entry counts per gate.</td>
+                    <td>Security Head</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Logistics (Hospitality & F&B)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Purpose</th>
+                    <th>Access</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>GET</td>
+                    <td>/accommodation/availability</td>
+                    <td>Check rooms available per block.</td>
+                    <td>Hospitality</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/accommodation/assign</td>
+                    <td>Assign specific Room ID to User ID.</td>
+                    <td>Hospitality</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/fnb/redeem</td>
+                    <td>Redeem a digital meal coupon (Atomic Check).</td>
+                    <td>F&B Volunteer</td>
+                </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/fnb/stats</td>
+                    <td>"Plates served" counter (Inventory management).</td>
+                    <td>F&B Head</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Engagement (Social & Mystery)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Purpose</th>
+                    <th>Access</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>POST</td>
+                    <td>/mystery/scan</td>
+                    <td>Submit a found Mystery QR hash.</td>
+                    <td>Auth</td>
+                </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/social/feed</td>
+                    <td>Public endpoint for Homepage Social Wall (Approved only).</td>
+                    <td>Public</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/social/ingest</td>
+                    <td>(Cron) Trigger IG Graph API fetch + Gemini Moderation.</td>
+                    <td>System</td>
+                </tr>
+                <tr>
+                    <td>PUT</td>
+                    <td>/social/:id/moderate</td>
+                    <td>Manual override (Approve/Reject) of AI verdict.</td>
+                    <td>Admin</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Operations (Support & Config)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Purpose</th>
+                    <th>Access</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>POST</td>
+                    <td>/tickets</td>
+                    <td>Raise a new support issue.</td>
+                    <td>Auth</td>
+                </tr>
+                <tr>
+                    <td>GET</td>
+                    <td>/system/config</td>
+                    <td>Fetch Feature Flags (e.g., is_maintenance_mode).</td>
+                    <td>Public</td>
+                </tr>
+                <tr>
+                    <td>POST</td>
+                    <td>/system/config</td>
+                    <td>Update Feature Flags (The "Panic Panel").</td>
+                    <td>SuperAdmin</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr class="hr-divider">
+
+        <h2>The Queue Strategy (Handling the Load)</h2>
+        <p>We will use BullMQ to decouple "User Actions" from "Heavy Processing".</p>
+
+        <h3>Scenario: Payment Webhook Burst (2,000 req/min)</h3>
+        <ol>
+            <li>G-Events Webhook hits <code>POST /webhook</code>.</li>
+            <li>API: Pushes job to payment-queue (Time: 2ms). Returns 200 OK.</li>
+            <li>Worker: Picks up job.</li>
+            <li>Validates Signature.</li>
+            <li>Updates DB (Paid).</li>
+            <li>Generates QR Seed.</li>
+            <li>Sends Email.</li>
+        </ol>
+        <p>Result: The API never crashes, even if the Email service is slow.</p>
+
+        <hr class="hr-divider">
+
+        <h2>Environments Strategy</h2>
+
+        <h4>A. Local Development (Laptop)</h4>
+        <ul>
+            <li><strong>DB:</strong> Local Docker container.</li>
+            <li><strong>Data:</strong> Seeded with 10 fake users.</li>
+            <li><strong>Focus:</strong> Writing code.</li>
+        </ul>
+
+        <h4>B. Staging (The Rehearsal)</h4>
+        <ul>
+            <li><strong>URL:</strong> api-staging.shore.in</li>
+            <li><strong>DB:</strong> Cloud SQL (Staging Instance).</li>
+            <li><strong>Data:</strong> Anonymized copy of production data (or massive fake data).</li>
+            <li><strong>Purpose:</strong>
+                <ul>
+                    <li>Load Testing: We attack this env with scripts to break it.</li>
+                    <li>UAT: The Hospitality Head logs in here to "practice" assigning rooms.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h4>C. Production (The Show)</h4>
+        <ul>
+            <li><strong>URL:</strong> api.shore.in</li>
+            <li><strong>DB:</strong> Cloud SQL (Production High-Availability Instance).</li>
+            <li><strong>Data:</strong> Real User Data.</li>
+            <li><strong>Constraint:</strong> Read-Only access for developers. No manual DB edits allowed.</li>
+        </ul>
+
+        <hr class="hr-divider">
+
+        <h2>Day 1 Launch Plan (Deployment Strategy)</h2>
+        <p>Target: Zero Downtime, High Availability.</p>
+
+        <h3>Phase 1: The "Soft" Freeze (T-Minus 48 Hours)</h3>
+        <ol>
+            <li>Code Freeze: No new features. Only critical bug fixes.</li>
+            <li>Database Snapshot: Create a full backup of the Pre-Prod DB.</li>
+            <li>Load Testing: Run k6 script to simulate 5,000 concurrents hitting <code>/events</code> and <code>/gate/verify</code>.</li>
+            <li>Cache Warm-up: Pre-load the Redis cache with Event Details, FAQs, and Role Permissions.</li>
+        </ol>
+
+        <h3>Phase 2: The Infrastructure Setup (T-Minus 24 Hours)</h3>
+        <ol>
+            <li>Scale Up: Increase Cloud SQL instance size (High CPU/RAM) to handle concurrent writes.</li>
+            <li>Replica Setup: Spin up 2 Read Replicas for the database (offload Analytics/Dashboard queries).</li>
+            <li>Worker Nodes: Scale up the BullMQ worker instances to handle "Payment Burst" traffic.</li>
+        </ol>
+
+        <h3>Phase 3: The "Go Live" (Hour 0)</h3>
+        <ol>
+            <li>Feature Flag Check: Ensure <code>registrations_open</code> is FALSE initially.</li>
+            <li>Deploy: Push Docker containers to production (Cloud Run / GKE).</li>
+            <li>Sanity Check: Admins perform a "Test Loop" (Register -> Pay -> Generate QR -> Scan) on Production.</li>
+            <li>The Switch: Admin toggles <code>registrations_open</code> to TRUE.</li>
+            <li>Marketing Blast: Email/SMS sent to students.</li>
+        </ol>
+
+        <h3>Phase 4: The War Room (Monitoring)</h3>
+        <ol>
+            <li>Screens: Display Grafana Dashboards showing:
+                <ul>
+                    <li>API Latency (Alert if > 500ms).</li>
+                    <li>Error Rate (Alert if > 1%).</li>
+                    <li>Queue Depth (Are payments piling up?).</li>
+                    <li>Social Wall AI Rejection Rate.</li>
+                </ul>
+            </li>
+            <li>Contingency:
+                <ul>
+                    <li>DB High CPU: Switch Analytics dashboard to read from "Cache Only."</li>
+                    <li>Scan Failure: Broadcast "Switch to Offline Mode" notification to all Scanners via FCM.</li>
+                </ul>
+            </li>
+        </ol>
+
+    </main>
+
+</body>
+</html>
